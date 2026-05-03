@@ -78,7 +78,10 @@ export default function Chatbot({ activeSection }) {
   const scrollRef = useRef(null)
   const inputRef = useRef(null)
 
-  const apiKey = import.meta.env.VITE_GEMINI_API_KEY
+  const envApiKey = import.meta.env.VITE_GEMINI_API_KEY
+  const [localApiKey, setLocalApiKey] = useState(() => localStorage.getItem('gemini_api_key') || '')
+  const apiKey = envApiKey || localApiKey
+
   const suggestions = SUGGESTED_PROMPTS[activeSection?.id] ?? []
 
   useEffect(() => {
@@ -95,7 +98,7 @@ export default function Chatbot({ activeSection }) {
     const trimmed = text.trim()
     if (!trimmed || loading) return
     if (!apiKey) {
-      setError('Missing VITE_GEMINI_API_KEY in .env.local')
+      setError('Please set your Gemini API key below to continue.')
       return
     }
 
@@ -190,6 +193,23 @@ export default function Chatbot({ activeSection }) {
               <div className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-700">{error}</div>
             )}
           </div>
+
+          {!envApiKey && (
+            <div className="border-t border-slate-200 bg-amber-50 p-3">
+              <p className="mb-2 text-xs font-semibold text-amber-800">API Key Required</p>
+              <input
+                type="password"
+                value={localApiKey}
+                onChange={(e) => {
+                  setLocalApiKey(e.target.value)
+                  localStorage.setItem('gemini_api_key', e.target.value)
+                  if (e.target.value) setError(null)
+                }}
+                placeholder="Enter Gemini API Key (saved locally)"
+                className="w-full rounded-lg border border-amber-200 bg-white px-3 py-2 text-sm text-slate-800 outline-none transition focus:border-amber-400 focus:ring-2 focus:ring-amber-100"
+              />
+            </div>
+          )}
 
           {messages.length <= 1 && suggestions.length > 0 && (
             <div className="border-t border-slate-200 bg-white px-3 pt-3">

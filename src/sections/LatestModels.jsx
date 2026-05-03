@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 
 const MODEL = 'gemini-2.5-flash'
 const ENDPOINT = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent`
@@ -164,17 +164,28 @@ export default function LatestModels() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
   const [fetchedAt, setFetchedAt] = useState(null)
-  const apiKey = import.meta.env.VITE_GEMINI_API_KEY
+  
+  const envApiKey = import.meta.env.VITE_GEMINI_API_KEY
+  const [localApiKey, setLocalApiKey] = useState(() => localStorage.getItem('gemini_api_key') || '')
+  const apiKey = envApiKey || localApiKey
+
+  // Sync localApiKey if user sets it elsewhere
+  useEffect(() => {
+    const handleStorage = () => setLocalApiKey(localStorage.getItem('gemini_api_key') || '')
+    window.addEventListener('storage', handleStorage)
+    return () => window.removeEventListener('storage', handleStorage)
+  }, [])
 
   async function refresh() {
-    if (!apiKey) {
-      setError('Missing VITE_GEMINI_API_KEY in .env.local')
+    const currentApiKey = envApiKey || localStorage.getItem('gemini_api_key')
+    if (!currentApiKey) {
+      setError('Missing Gemini API Key. Please enter it in the Dev Assistant chat.')
       return
     }
     setLoading(true)
     setError(null)
     try {
-      const result = await fetchModelUpdates(apiKey)
+      const result = await fetchModelUpdates(currentApiKey)
       setUpdates(result)
       setFetchedAt(new Date())
     } catch (e) {
